@@ -105,4 +105,4 @@ TURN: Add Twilio/Coturn credentials to `server/server.js` for NAT traversal beyo
 
 ## 🏷️ Branding
 
-**Developed by [SanStudio](https://sanstudio.neocities.org/)**
+**Developed by [SanStudio](https://sanstudio.free.nf/)**
