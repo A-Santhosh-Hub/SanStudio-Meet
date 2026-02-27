@@ -17,17 +17,7 @@ export default function LoginPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        let ok;
-        if (roleTab === 'student') {
-            ok = await login(form.username, form.password);
-        } else if (roleTab === 'coach') {
-            ok = await login(form.username, form.password);
-        } else if (roleTab === 'pm') {
-            ok = await login(form.username, form.password);
-        } else if (roleTab === 'admin') {
-            ok = await login(form.username, form.password);
-        }
-
+        const ok = await login(form.username, form.password);
         if (ok) {
             const stored = JSON.parse(localStorage.getItem('sanstudio_meet_user') || 'null');
             if (stored?.role === 'admin') navigate('/admin');
@@ -41,127 +31,181 @@ export default function LoginPage() {
         setForm({ username: '', password: '' });
     };
 
+    const tabs = [
+        { key: 'student', label: 'Student' },
+        { key: 'coach', label: 'Coach' },
+        { key: 'pm', label: 'PM Sir' },
+    ];
+
     return (
-        <div className="min-h-screen animated-gradient flex flex-col items-center justify-center p-4 relative overflow-hidden">
-            {/* Admin Login Button (Top Right) */}
-            <div className="absolute top-4 right-4 z-20">
-                <button
-                    onClick={() => switchTab('admin')}
-                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${roleTab === 'admin' ? 'bg-red-500 text-white shadow-lg shadow-red-500/30' : 'bg-white/10 text-white hover:bg-white/20 backdrop-blur-md'}`}>
-                    👑 Admin Login
-                </button>
-            </div>
+        <div className="min-h-screen flex" style={{ background: '#f5f5f5' }}>
 
-            {/* Floating blobs */}
-            <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-purple-600/20 rounded-full blur-3xl pointer-events-none" />
-
-            <div className="relative z-10 w-full max-w-sm">
+            {/* ── Left panel — branding ── */}
+            <div className="hidden lg:flex flex-col justify-between w-[420px] flex-shrink-0 p-12"
+                style={{ background: '#1c1c1c', color: '#fff' }}>
                 {/* Logo */}
-                <div className="flex flex-col items-center mb-8">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-xl shadow-indigo-500/30 mb-4">
-                        <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8">
+                <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center"
+                        style={{ background: '#2D8CFF' }}>
+                        <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5">
                             <rect x="2" y="7" width="9" height="9" rx="2" fill="white" />
-                            <circle cx="12" cy="12" r="3" fill="indigo" />
                             <path d="M13 9.5L21 6v12l-8-3.5V9.5z" fill="white" />
                         </svg>
                     </div>
-                    <h1 className="text-white text-2xl font-bold tracking-tight text-center">ALP Astrology<br /><span className="text-lg text-indigo-300">Learning Platform</span></h1>
+                    <span className="font-bold text-lg tracking-tight">SanStudio Meet</span>
                 </div>
 
-                {/* Card */}
-                <div className="glass-card shadow-2xl overflow-hidden" style={{ background: 'rgba(15,15,30,0.8)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                {/* Centre tagline */}
+                <div>
+                    <h2 className="text-3xl font-bold leading-snug mb-4">
+                        Meet, Collaborate<br />and Learn Together
+                    </h2>
+                    <p style={{ color: '#a0a0b0', fontSize: '0.9rem' }}>
+                        HD video meetings, real-time chat and screen sharing — all from your browser.
+                    </p>
+                </div>
 
-                    {/* Tabs for Student, Coach, PM Sir (hide if Admin) */}
-                    {roleTab !== 'admin' && (
-                        <div className="flex border-b border-white/10" style={{ background: 'rgba(0,0,0,0.2)' }}>
-                            <button onClick={() => switchTab('student')}
-                                className={`flex-1 py-4 text-sm font-semibold transition-all relative ${roleTab === 'student' ? 'text-indigo-400' : 'text-slate-400 hover:text-white'}`}>
-                                🎓 Student
-                                {roleTab === 'student' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-500" />}
-                            </button>
-                            <button onClick={() => switchTab('coach')}
-                                className={`flex-1 py-4 text-sm font-semibold transition-all relative ${roleTab === 'coach' ? 'text-yellow-400' : 'text-slate-400 hover:text-white'}`}>
-                                👨‍🏫 Coach
-                                {roleTab === 'coach' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-yellow-500" />}
-                            </button>
-                            <button onClick={() => switchTab('pm')}
-                                className={`flex-1 py-4 text-sm font-semibold transition-all relative ${roleTab === 'pm' ? 'text-amber-300' : 'text-slate-400 hover:text-white'}`}>
-                                ⭐ PM Sir
-                                {roleTab === 'pm' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-amber-400" />}
-                            </button>
+                {/* Footer */}
+                <p style={{ color: '#555', fontSize: '0.75rem' }}>
+                    © 2025 SanStudio · Powered by WebRTC
+                </p>
+            </div>
+
+            {/* ── Right panel — form ── */}
+            <div className="flex-1 flex flex-col items-center justify-center p-8">
+
+                {/* Mobile logo */}
+                <div className="flex items-center gap-2 mb-8 lg:hidden">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+                        style={{ background: '#2D8CFF' }}>
+                        <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
+                            <rect x="2" y="7" width="9" height="9" rx="2" fill="white" />
+                            <path d="M13 9.5L21 6v12l-8-3.5V9.5z" fill="white" />
+                        </svg>
+                    </div>
+                    <span className="font-bold text-lg" style={{ color: '#1c1c1c' }}>SanStudio Meet</span>
+                </div>
+
+                <div className="w-full max-w-md">
+                    {/* Card */}
+                    <div className="bg-white rounded-xl shadow-sm border"
+                        style={{ borderColor: '#e5e5e5' }}>
+
+                        {/* Header */}
+                        <div className="px-8 pt-8 pb-4">
+                            <h1 className="text-xl font-bold" style={{ color: '#1c1c1c' }}>
+                                {roleTab === 'admin' ? 'Admin Sign In' : 'Sign In'}
+                            </h1>
+                            <p className="text-sm mt-1" style={{ color: '#747487' }}>
+                                {roleTab === 'pm'
+                                    ? 'PM Sir — instant access to all meetings'
+                                    : roleTab === 'admin'
+                                        ? 'Administrator portal'
+                                        : 'Enter your credentials to continue'}
+                            </p>
                         </div>
-                    )}
 
-                    {/* PM Sir Header */}
-                    {roleTab === 'pm' && (
-                        <div className="px-6 py-4 border-b border-amber-400/20 bg-amber-500/10">
-                            <h2 className="text-amber-300 font-bold text-center">⭐ PM Sir Portal</h2>
-                            <p className="text-amber-400/70 text-xs text-center mt-0.5">Instant access to all meeting rooms</p>
-                        </div>
-                    )}
+                        {/* Tabs (not for admin) */}
+                        {roleTab !== 'admin' && (
+                            <div className="flex px-8 gap-0 border-b" style={{ borderColor: '#e5e5e5' }}>
+                                {tabs.map(t => (
+                                    <button key={t.key} onClick={() => switchTab(t.key)}
+                                        className="py-3 px-4 text-sm font-medium relative transition-colors"
+                                        style={{
+                                            color: roleTab === t.key ? '#2D8CFF' : '#747487',
+                                            borderBottom: roleTab === t.key ? '2px solid #2D8CFF' : '2px solid transparent',
+                                            marginBottom: '-1px',
+                                            background: 'none',
+                                            border: 'none',
+                                            borderBottom: roleTab === t.key ? '2px solid #2D8CFF' : '2px solid transparent',
+                                            cursor: 'pointer',
+                                        }}>
+                                        {t.label}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
 
-                    {/* Admin Header */}
-                    {roleTab === 'admin' && (
-                        <div className="px-6 py-4 border-b border-red-500/20 bg-red-500/10">
-                            <h2 className="text-red-400 font-bold text-center">Admin Portal</h2>
-                        </div>
-                    )}
+                        {/* Form */}
+                        <form onSubmit={handleSubmit} className="px-8 py-6 flex flex-col gap-4">
 
-                    <div className="p-6">
-
-                        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-
-                            <div>
-                                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5 block">
-                                    {roleTab === 'student' ? 'Student ID (Username)' : roleTab === 'coach' ? 'Coach ID' : 'Username'}
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-xs font-semibold uppercase tracking-wide"
+                                    style={{ color: '#747487' }}>
+                                    {roleTab === 'student' ? 'Student ID' : roleTab === 'coach' ? 'Coach ID' : 'Username'}
                                 </label>
-                                <input type="text" placeholder="Enter ID" value={form.username} onChange={set('username')} required autoFocus
-                                    className="meet-input bg-white/5 text-white border-white/10 focus:border-indigo-500" />
+                                <input
+                                    type="text"
+                                    placeholder="Enter your ID"
+                                    value={form.username}
+                                    onChange={set('username')}
+                                    required
+                                    autoFocus
+                                    className="meet-input"
+                                />
                             </div>
 
-                            <div>
-                                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5 block">
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-xs font-semibold uppercase tracking-wide"
+                                    style={{ color: '#747487' }}>
                                     Password
                                 </label>
-                                <input type="password" placeholder="Enter password" value={form.password} onChange={set('password')} required
-                                    className="meet-input bg-white/5 text-white border-white/10 focus:border-indigo-500" />
+                                <input
+                                    type="password"
+                                    placeholder="Enter your password"
+                                    value={form.password}
+                                    onChange={set('password')}
+                                    required
+                                    className="meet-input"
+                                />
                             </div>
 
                             {error && (
-                                <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-red-500/15 border border-red-500/20">
-                                    <span className="text-sm">⚠️</span>
-                                    <p className="text-red-400 text-sm">{error}</p>
+                                <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm"
+                                    style={{ background: '#fff5f5', border: '1px solid #fdd', color: '#cc2200' }}>
+                                    ⚠️ {error}
                                 </div>
                             )}
 
-                            <button type="submit" disabled={loading}
-                                className={`btn-ripple w-full mt-2 py-3 rounded-xl font-bold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed
-                                ${roleTab === 'admin' ? 'bg-gradient-to-r from-red-500 to-orange-500 hover:shadow-red-500/25' :
-                                        roleTab === 'pm' ? 'bg-gradient-to-r from-amber-400 to-yellow-500 hover:shadow-amber-400/25 text-slate-900' :
-                                            roleTab === 'coach' ? 'bg-gradient-to-r from-yellow-500 to-amber-600 hover:shadow-yellow-500/25' :
-                                                'bg-gradient-to-r from-indigo-500 to-purple-500 hover:shadow-indigo-500/25'} hover:shadow-lg`}>
-                                {loading ? '⏳ Please wait...' : 'Login'}
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="btn-primary btn-ripple w-full mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                                style={roleTab === 'admin' ? { background: '#1c1c1c' } : {}}>
+                                {loading ? 'Signing in…' : 'Sign In'}
                             </button>
+
                         </form>
 
-                        {/* Hint for demo */}
-                        <div className="mt-6 p-3 rounded-xl bg-white/5 border border-white/10">
-                            <p className="text-indigo-300 text-[10px] uppercase font-semibold mb-1">🔑 Demo Accounts</p>
-                            <div className="grid grid-cols-2 gap-2 text-xs text-slate-400">
-                                <div><span className="text-white font-mono">admin / admin123</span><br />(Admin)</div>
-                                <div><span className="text-white font-mono">coach / coach123</span><br />(Coach)</div>
-                                <div><span className="text-amber-300 font-mono">pm / pm123</span><br />(PM Sir ⭐)</div>
-                                <div><span className="text-white font-mono">student / student123</span><br />(Student)</div>
+                        {/* Demo accounts */}
+                        <div className="mx-8 mb-8 p-4 rounded-lg" style={{ background: '#f8f8f8', border: '1px solid #e5e5e5' }}>
+                            <p className="text-xs font-semibold mb-2" style={{ color: '#a0a0b0' }}>DEMO ACCOUNTS</p>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs" style={{ color: '#747487' }}>
+                                <div><span className="font-mono font-semibold" style={{ color: '#1c1c1c' }}>admin / admin123</span> — Admin</div>
+                                <div><span className="font-mono font-semibold" style={{ color: '#1c1c1c' }}>coach / coach123</span> — Coach</div>
+                                <div><span className="font-mono font-semibold" style={{ color: '#2D8CFF' }}>pm / pm123</span> — PM Sir</div>
+                                <div><span className="font-mono font-semibold" style={{ color: '#1c1c1c' }}>student / student123</span> — Student</div>
                             </div>
                         </div>
+                    </div>
 
+                    {/* Admin link below card */}
+                    <div className="text-center mt-5">
+                        {roleTab !== 'admin' ? (
+                            <button onClick={() => switchTab('admin')}
+                                className="text-sm"
+                                style={{ color: '#747487', background: 'none', border: 'none', cursor: 'pointer' }}>
+                                Sign in as Administrator →
+                            </button>
+                        ) : (
+                            <button onClick={() => switchTab('student')}
+                                className="text-sm"
+                                style={{ color: '#2D8CFF', background: 'none', border: 'none', cursor: 'pointer' }}>
+                                ← Back to Student / Coach
+                            </button>
+                        )}
                     </div>
                 </div>
-
-                <p className="text-center text-slate-500 text-xs mt-6">
-                    ALP Astrology Course Platform
-                </p>
             </div>
         </div>
     );

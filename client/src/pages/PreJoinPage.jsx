@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useMediaDevices } from '../hooks/useMediaDevices';
+import { useAuth } from '../context/AuthContext';
 
 export default function PreJoinPage() {
     const { roomId } = useParams();
     const [searchParams] = useSearchParams();
     const isHost = searchParams.get('host') === 'true';
     const navigate = useNavigate();
+    const { user } = useAuth();
 
     const { stream, audioEnabled, videoEnabled, getMedia, toggleAudio, toggleVideo } = useMediaDevices();
-    const [name, setName] = useState(() => localStorage.getItem('meet-name') || '');
+    const [name, setName] = useState(() => user?.displayName || user?.username || localStorage.getItem('meet-name') || '');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [roomInfo, setRoomInfo] = useState(null);
@@ -18,24 +20,16 @@ export default function PreJoinPage() {
     const [joining, setJoining] = useState(false);
     const videoRef = useRef(null);
 
-    // Fetch room info
     useEffect(() => {
         fetch(`/api/room/${roomId}`)
             .then(r => r.json())
-            .then(data => {
-                setRoomInfo(data);
-                setShowPassword(data.hasPassword && !isHost);
-                setLoading(false);
-            })
+            .then(data => { setRoomInfo(data); setShowPassword(data.hasPassword && !isHost); setLoading(false); })
             .catch(() => setLoading(false));
     }, [roomId, isHost]);
 
-    // Init camera preview
     useEffect(() => {
         getMedia()
-            .then(s => {
-                if (videoRef.current) videoRef.current.srcObject = s;
-            })
+            .then(s => { if (videoRef.current) videoRef.current.srcObject = s; })
             .catch(err => {
                 setMediaError(err.name === 'NotAllowedError'
                     ? 'Camera/mic permission denied. You can still join without video.'
@@ -45,9 +39,7 @@ export default function PreJoinPage() {
     }, []);
 
     useEffect(() => {
-        if (stream && videoRef.current) {
-            videoRef.current.srcObject = stream;
-        }
+        if (stream && videoRef.current) videoRef.current.srcObject = stream;
     }, [stream]);
 
     const handleJoin = (e) => {
@@ -55,69 +47,68 @@ export default function PreJoinPage() {
         if (!name.trim()) return;
         localStorage.setItem('meet-name', name.trim());
         setJoining(true);
-
         const params = new URLSearchParams({
             name: name.trim(),
             host: isHost ? 'true' : 'false',
             ...(password ? { password } : {}),
         });
-
-        setTimeout(() => {
-            navigate(`/room/${roomId}?${params.toString()}`);
-        }, 400);
+        setTimeout(() => navigate(`/room/${roomId}?${params.toString()}`), 300);
     };
 
     if (loading) {
         return (
-            <div className="min-h-screen animated-gradient flex items-center justify-center">
-                <div className="text-white text-center">
-                    <div className="w-12 h-12 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                    <p className="text-slate-300">Loading meeting...</p>
+            <div className="h-screen flex items-center justify-center" style={{ background: '#1c1c1c' }}>
+                <div className="text-center">
+                    <div className="w-10 h-10 border-2 rounded-full animate-spin mx-auto mb-3"
+                        style={{ borderColor: '#2D8CFF', borderTopColor: 'transparent' }} />
+                    <p className="text-sm" style={{ color: '#a0a0b0' }}>Loading meeting…</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen animated-gradient flex items-center justify-center p-4">
-            <div className="w-full max-w-4xl animate-bounce-in">
-                {/* Header */}
-                <div className="text-center mb-8">
-                    <a href="/" className="inline-flex items-center gap-2 mb-6">
-                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                            <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5">
-                                <rect x="2" y="7" width="9" height="9" rx="2" fill="white" />
-                                <path d="M13 9.5L21 6v12l-8-3.5V9.5z" fill="white" />
-                            </svg>
-                        </div>
-                        <span className="text-white font-bold">SanStudio Meet</span>
-                    </a>
-                    <h2 className="text-white text-2xl font-bold">Ready to join?</h2>
-                    <p className="text-slate-400 text-sm mt-1">Meeting: <span className="text-indigo-400 font-mono">{roomId}</span></p>
-                </div>
+        <div className="h-screen flex flex-col" style={{ background: '#1c1c1c' }}>
 
-                <div className="grid md:grid-cols-5 gap-6">
-                    {/* Camera Preview */}
-                    <div className="md:col-span-3">
-                        <div className="video-tile rounded-2xl overflow-hidden" style={{ aspectRatio: '16/9', background: '#1a1a2e' }}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b"
+                style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+                <a href="/" className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center"
+                        style={{ background: '#2D8CFF' }}>
+                        <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
+                            <rect x="2" y="7" width="9" height="9" rx="2" fill="white" />
+                            <path d="M13 9.5L21 6v12l-8-3.5V9.5z" fill="white" />
+                        </svg>
+                    </div>
+                    <span className="font-bold text-sm" style={{ color: '#fff' }}>SanStudio Meet</span>
+                </a>
+                <span className="font-mono text-xs px-2.5 py-1 rounded-md"
+                    style={{ background: 'rgba(255,255,255,0.08)', color: '#a0a0b0' }}>
+                    {roomId}
+                </span>
+            </div>
+
+            {/* Main content */}
+            <div className="flex-1 flex items-center justify-center p-6">
+                <div className="w-full max-w-4xl flex flex-col md:flex-row gap-6 items-start">
+
+                    {/* Camera preview */}
+                    <div className="flex-1">
+                        <div className="video-tile rounded-xl overflow-hidden" style={{ aspectRatio: '16/9' }}>
                             {mediaError ? (
                                 <div className="w-full h-full flex flex-col items-center justify-center text-center p-6">
-                                    <span className="text-4xl mb-3">📵</span>
-                                    <p className="text-slate-400 text-sm">{mediaError}</p>
+                                    <span className="text-3xl mb-3">📵</span>
+                                    <p className="text-sm" style={{ color: '#a0a0b0' }}>{mediaError}</p>
                                 </div>
                             ) : (
                                 <>
-                                    <video
-                                        ref={videoRef}
-                                        autoPlay
-                                        muted
-                                        playsInline
+                                    <video ref={videoRef} autoPlay muted playsInline
                                         className="w-full h-full object-cover"
-                                        style={{ display: videoEnabled ? 'block' : 'none' }}
-                                    />
+                                        style={{ display: videoEnabled ? 'block' : 'none' }} />
                                     {!videoEnabled && (
                                         <div className="avatar-placeholder">
-                                            <span className="text-5xl font-bold text-white/80">
+                                            <span className="text-4xl font-bold" style={{ color: 'rgba(255,255,255,0.7)' }}>
                                                 {name ? name[0].toUpperCase() : '?'}
                                             </span>
                                         </div>
@@ -125,15 +116,14 @@ export default function PreJoinPage() {
                                 </>
                             )}
 
-                            {/* Overlay Controls */}
+                            {/* Controls overlay */}
                             <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-3">
-                                <button
-                                    onClick={toggleAudio}
-                                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg ${audioEnabled
-                                            ? 'bg-white/20 hover:bg-white/30 text-white'
-                                            : 'bg-red-500 hover:bg-red-600 text-white mic-muted-pulse'
-                                        }`}
-                                >
+                                <button onClick={toggleAudio}
+                                    className="w-11 h-11 rounded-full flex items-center justify-center transition-colors"
+                                    style={{
+                                        background: audioEnabled ? 'rgba(255,255,255,0.18)' : '#e34d26',
+                                        color: '#fff',
+                                    }}>
                                     {audioEnabled ? (
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -146,14 +136,12 @@ export default function PreJoinPage() {
                                         </svg>
                                     )}
                                 </button>
-
-                                <button
-                                    onClick={toggleVideo}
-                                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg ${videoEnabled
-                                            ? 'bg-white/20 hover:bg-white/30 text-white'
-                                            : 'bg-red-500 hover:bg-red-600 text-white'
-                                        }`}
-                                >
+                                <button onClick={toggleVideo}
+                                    className="w-11 h-11 rounded-full flex items-center justify-center transition-colors"
+                                    style={{
+                                        background: videoEnabled ? 'rgba(255,255,255,0.18)' : '#e34d26',
+                                        color: '#fff',
+                                    }}>
                                     {videoEnabled ? (
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -169,109 +157,92 @@ export default function PreJoinPage() {
                             </div>
                         </div>
 
-                        {/* Mic test indicator */}
-                        {audioEnabled && (
-                            <div className="mt-3 flex items-center gap-2 px-4">
-                                <span className="text-slate-400 text-xs">Mic level:</span>
-                                <div className="flex gap-1">
-                                    {[...Array(8)].map((_, i) => (
-                                        <div key={i} className="w-1 rounded-full bg-indigo-500/40"
-                                            style={{ height: `${8 + Math.random() * 12}px`, animation: `waitPulse ${0.8 + i * 0.1}s ${i * 0.05}s ease-in-out infinite` }} />
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+                        {/* Device status indicators */}
+                        <div className="flex gap-4 mt-3 px-1">
+                            <span className="flex items-center gap-1.5 text-xs"
+                                style={{ color: audioEnabled ? '#1d9b5e' : '#e34d26' }}>
+                                <span className="w-1.5 h-1.5 rounded-full"
+                                    style={{ background: audioEnabled ? '#1d9b5e' : '#e34d26' }} />
+                                Mic {audioEnabled ? 'On' : 'Off'}
+                            </span>
+                            <span className="flex items-center gap-1.5 text-xs"
+                                style={{ color: videoEnabled ? '#1d9b5e' : '#e34d26' }}>
+                                <span className="w-1.5 h-1.5 rounded-full"
+                                    style={{ background: videoEnabled ? '#1d9b5e' : '#e34d26' }} />
+                                Camera {videoEnabled ? 'On' : 'Off'}
+                            </span>
+                            {roomInfo?.participantCount > 0 && (
+                                <span className="flex items-center gap-1.5 text-xs" style={{ color: '#a0a0b0' }}>
+                                    <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+                                    {roomInfo.participantCount} in meeting
+                                </span>
+                            )}
+                        </div>
                     </div>
 
-                    {/* Join Form */}
-                    <div className="md:col-span-2 flex flex-col gap-5">
-                        <div className="glass-card p-6 bg-white/5 border-white/10 flex flex-col gap-4">
-                            <h3 className="text-white font-semibold text-lg">Your Info</h3>
+                    {/* Join form */}
+                    <div className="w-full md:w-72 flex-shrink-0">
+                        <div className="bg-white rounded-xl p-6 shadow-sm">
+                            <h2 className="font-bold text-lg mb-1" style={{ color: '#1c1c1c' }}>
+                                {isHost ? 'Start Meeting' : 'Join Meeting'}
+                            </h2>
+                            <p className="text-sm mb-5" style={{ color: '#747487' }}>
+                                {isHost ? 'You are the host' : 'Enter your name to join'}
+                            </p>
 
                             <form onSubmit={handleJoin} className="flex flex-col gap-4">
                                 <div>
-                                    <label className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-2 block">
+                                    <label className="text-xs font-semibold uppercase tracking-wide mb-1.5 block"
+                                        style={{ color: '#747487' }}>
                                         Display Name
                                     </label>
                                     <input
                                         type="text"
-                                        placeholder="Enter your name..."
+                                        placeholder="Your name…"
                                         value={name}
-                                        onChange={(e) => setName(e.target.value)}
-                                        autoFocus
+                                        onChange={e => setName(e.target.value)}
                                         required
+                                        autoFocus={!name}
                                         maxLength={40}
-                                        className="px-4 py-3 rounded-xl w-full bg-white/5 border border-white/10 text-white placeholder-slate-500 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all text-sm"
+                                        className="meet-input text-sm"
                                     />
                                 </div>
 
                                 {showPassword && (
                                     <div>
-                                        <label className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-2 block">
+                                        <label className="text-xs font-semibold uppercase tracking-wide mb-1.5 block"
+                                            style={{ color: '#747487' }}>
                                             Meeting Password
                                         </label>
                                         <input
                                             type="password"
-                                            placeholder="Enter password..."
+                                            placeholder="Enter password…"
                                             value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                            className="px-4 py-3 rounded-xl w-full bg-white/5 border border-white/10 text-white placeholder-slate-500 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all text-sm"
+                                            onChange={e => setPassword(e.target.value)}
+                                            className="meet-input text-sm"
                                         />
                                     </div>
                                 )}
 
-                                {/* Status indicators */}
-                                <div className="flex flex-col gap-2">
-                                    <div className={`flex items-center gap-2 text-xs ${audioEnabled ? 'text-green-400' : 'text-red-400'}`}>
-                                        <span className={`w-2 h-2 rounded-full ${audioEnabled ? 'bg-green-400' : 'bg-red-400'}`} />
-                                        Microphone: {audioEnabled ? 'Ready' : 'Muted'}
-                                    </div>
-                                    <div className={`flex items-center gap-2 text-xs ${videoEnabled ? 'text-green-400' : 'text-red-400'}`}>
-                                        <span className={`w-2 h-2 rounded-full ${videoEnabled ? 'bg-green-400' : 'bg-red-400'}`} />
-                                        Camera: {videoEnabled ? 'Ready' : 'Off'}
-                                    </div>
-                                    {roomInfo?.participantCount > 0 && (
-                                        <div className="flex items-center gap-2 text-xs text-slate-400">
-                                            <span className="w-2 h-2 rounded-full bg-indigo-400" />
-                                            {roomInfo.participantCount} already in meeting
-                                        </div>
-                                    )}
-                                </div>
-
-                                <button
-                                    type="submit"
+                                <button type="submit"
                                     disabled={!name.trim() || joining}
-                                    className="btn-primary btn-ripple w-full disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                                >
+                                    className="btn-primary btn-ripple w-full disabled:opacity-40 disabled:cursor-not-allowed">
                                     {joining ? (
-                                        <>
-                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                            Joining...
-                                        </>
-                                    ) : (
-                                        <>
-                                            {isHost ? '🚀 Start Meeting' : '🔗 Join Meeting'}
-                                        </>
-                                    )}
+                                        <span className="flex items-center justify-center gap-2">
+                                            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                            Joining…
+                                        </span>
+                                    ) : isHost ? '🚀 Start Meeting' : '🔗 Join Meeting'}
                                 </button>
                             </form>
-                        </div>
 
-                        <div className="glass-card p-4 bg-white/3 border-white/8 text-center">
-                            <p className="text-slate-400 text-xs">
-                                🔒 This meeting uses end-to-end WebRTC encryption
+                            <p className="text-center text-xs mt-4" style={{ color: '#c0c0c0' }}>
+                                🔒 End-to-end WebRTC encryption
                             </p>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            {/* Footer */}
-            <div className="absolute bottom-4 left-0 right-0 text-center">
-                <a href="https://sanstudio.neocities.org/" target="_blank" rel="noopener noreferrer"
-                    className="text-slate-500 text-xs hover:text-indigo-400 transition-colors">
-                    Developed by <span className="text-indigo-500 font-semibold">SanStudio</span>
-                </a>
+                </div>
             </div>
         </div>
     );

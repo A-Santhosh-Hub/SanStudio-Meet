@@ -71,11 +71,11 @@ export const isHost = (user) => user?.role === 'coach' || user?.role === 'admin'
 export const isUser = (user) => user?.role === 'student';
 
 export const ROLE_COLORS = {
-    admin: { bg: 'bg-red-500/15', text: 'text-red-400', border: 'border-red-500/20', label: 'Admin' },
-    coach: { bg: 'bg-yellow-500/15', text: 'text-yellow-400', border: 'border-yellow-500/20', label: 'Coach' },
-    student: { bg: 'bg-blue-500/15', text: 'text-blue-400', border: 'border-blue-500/20', label: 'Student' },
-    pm: { bg: 'bg-amber-500/15', text: 'text-amber-300', border: 'border-amber-400/30', label: 'PM Sir' },
+    admin: { bg: 'bg-blue-50', text: 'text-blue-800', border: 'border-blue-200', label: 'Admin' },
+    coach: { bg: 'bg-slate-100', text: 'text-slate-700', border: 'border-slate-300', label: 'Coach' },
+    student: { bg: 'bg-gray-100', text: 'text-gray-600', border: 'border-gray-300', label: 'Student' },
+    pm: { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-300', label: 'PM Sir' },
     // fallback aliases
-    host: { bg: 'bg-yellow-500/15', text: 'text-yellow-400', border: 'border-yellow-500/20', label: 'Host' },
-    user: { bg: 'bg-blue-500/15', text: 'text-blue-400', border: 'border-blue-500/20', label: 'User' },
+    host: { bg: 'bg-slate-100', text: 'text-slate-700', border: 'border-slate-300', label: 'Host' },
+    user: { bg: 'bg-gray-100', text: 'text-gray-600', border: 'border-gray-300', label: 'User' },
 };
