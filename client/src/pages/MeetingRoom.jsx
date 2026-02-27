@@ -4,6 +4,7 @@ import { useSocket } from '../hooks/useSocket';
 import { useWebRTC } from '../hooks/useWebRTC';
 import { useMediaDevices } from '../hooks/useMediaDevices';
 import { useAuth, ROLE_COLORS } from '../context/AuthContext';
+import { useActiveSpeaker } from '../hooks/useActiveSpeaker';
 import VideoGrid from '../components/VideoGrid';
 import ControlsBar from '../components/ControlsBar';
 import ChatPanel from '../components/ChatPanel';
@@ -59,6 +60,11 @@ export default function MeetingRoom() {
     const [controlMode, setControlMode] = useState('lecture');
     const [canSpeak, setCanSpeak] = useState(false); // Temporarily allowed by coach
 
+    // ── Active speaker & view ─────────────────────────────────
+    const [activeSpeaker, setActiveSpeaker] = useState(null); // peer id or 'local'
+    const [viewMode, setViewMode] = useState('gallery');       // 'speaker' | 'gallery'
+    const [pinnedId, setPinnedId] = useState(null);           // pinned tile id
+
     // ── Hooks ────────────────────────────────────────────────
     const { socketRef } = useSocket();
     const {
@@ -87,6 +93,30 @@ export default function MeetingRoom() {
         socketRef,
         roomId,
     });
+
+    // ── Active speaker detection ──────────────────────────────
+    const { monitor, unmonitor } = useActiveSpeaker(setActiveSpeaker, {
+        threshold: 28,
+        switchDelay: 1200,
+    });
+
+    // Monitor local stream
+    useEffect(() => {
+        if (localStream) monitor('local', localStream);
+        return () => unmonitor('local');
+    }, [localStream, monitor, unmonitor]);
+
+    // Monitor / unmonitor remote streams as they arrive/leave
+    useEffect(() => {
+        Object.entries(remoteStreams).forEach(([peerId, data]) => {
+            if (data.stream) monitor(peerId, data.stream);
+        });
+    }, [remoteStreams, monitor]);
+
+    const handleRemoveStreamWithUnmonitor = useCallback((peerId) => {
+        unmonitor(peerId);
+        handleRemoveStream(peerId);
+    }, [unmonitor, handleRemoveStream]);
 
     // ── Toast ────────────────────────────────────────────────
     const addToast = useCallback((message, type = 'info', duration = 3000) => {
@@ -492,22 +522,53 @@ export default function MeetingRoom() {
 
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-2 flex-shrink-0"
-                style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-color)' }}>
+                style={{ background: '#1c1c1c', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                 <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#2D8CFF' }}>
                         <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
                             <rect x="2" y="7" width="9" height="9" rx="2" fill="white" />
                             <path d="M13 9.5L21 6v12l-8-3.5V9.5z" fill="white" />
                         </svg>
                     </div>
-                    <span className="font-semibold text-sm hidden sm:block" style={{ color: 'var(--text-primary)' }}>SanStudio Meet</span>
+                    <span className="font-semibold text-sm hidden sm:block" style={{ color: '#fff' }}>SanStudio Meet</span>
                 </div>
                 <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs px-2 py-1 rounded-lg" style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
+                    {/* View mode toggle */}
+                    <div className="flex rounded-lg overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}>
+                        <button onClick={() => setViewMode('gallery')}
+                            className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium transition-colors"
+                            style={{
+                                background: viewMode === 'gallery' ? 'rgba(45,140,255,0.25)' : 'transparent',
+                                color: viewMode === 'gallery' ? '#2D8CFF' : '#a0a0b0',
+                            }}>
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <rect x="3" y="3" width="7" height="7" rx="1" strokeWidth={2} />
+                                <rect x="14" y="3" width="7" height="7" rx="1" strokeWidth={2} />
+                                <rect x="3" y="14" width="7" height="7" rx="1" strokeWidth={2} />
+                                <rect x="14" y="14" width="7" height="7" rx="1" strokeWidth={2} />
+                            </svg>
+                            <span className="hidden md:block">Gallery</span>
+                        </button>
+                        <button onClick={() => setViewMode('speaker')}
+                            className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium transition-colors"
+                            style={{
+                                background: viewMode === 'speaker' ? 'rgba(45,140,255,0.25)' : 'transparent',
+                                color: viewMode === 'speaker' ? '#2D8CFF' : '#a0a0b0',
+                            }}>
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <rect x="3" y="3" width="18" height="12" rx="1" strokeWidth={2} />
+                                <rect x="5" y="18" width="4" height="3" rx="0.5" strokeWidth={1.5} />
+                                <rect x="10" y="18" width="4" height="3" rx="0.5" strokeWidth={1.5} />
+                                <rect x="15" y="18" width="4" height="3" rx="0.5" strokeWidth={1.5} />
+                            </svg>
+                            <span className="hidden md:block">Speaker</span>
+                        </button>
+                    </div>
+
+                    <span className="font-mono text-xs px-2 py-1 rounded-lg" style={{ background: 'rgba(255,255,255,0.08)', color: '#a0a0b0' }}>
                         {roomId}
                     </span>
-                    {isHost && <span className="px-2 py-0.5 text-xs bg-yellow-500/15 text-yellow-500 rounded-full font-semibold">HOST</span>}
-                    {/* Role badge from auth */}
+                    {isHost && <span className="px-2 py-0.5 text-xs rounded-full font-semibold" style={{ background: 'rgba(45,140,255,0.2)', color: '#2D8CFF' }}>HOST</span>}
                     {userRole && userRole !== 'user' && (() => {
                         const rc = ROLE_COLORS[userRole];
                         return rc ? (
@@ -519,30 +580,32 @@ export default function MeetingRoom() {
                     <button
                         onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/join/${roomId}`); addToast('Meeting link copied!', 'success'); }}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-                        style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
-                        🔗 Copy link
+                        style={{ background: 'rgba(255,255,255,0.08)', color: '#a0a0b0' }}>
+                        🔗 Copy
                     </button>
-                    {/* Show waiting count badge for host */}
                     {isHost && waitingUsers.length > 0 && (
                         <span className="px-2 py-0.5 text-xs bg-yellow-500 text-black rounded-full font-bold animate-pulse">
-                            ⏳ {waitingUsers.length} waiting
+                            ⏳ {waitingUsers.length}
                         </span>
                     )}
                 </div>
                 <a href="https://sanstudio.neocities.org/" target="_blank" rel="noopener noreferrer"
-                    className="text-xs hidden md:block" style={{ color: 'var(--text-muted)' }}>
-                    by <span className="text-indigo-500 font-semibold">SanStudio</span>
+                    className="text-xs hidden md:block" style={{ color: '#555' }}>
+                    by <span style={{ color: '#2D8CFF', fontWeight: 600 }}>SanStudio</span>
                 </a>
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 flex overflow-hidden">
-                <div className="flex-1 overflow-hidden p-2 join-animate">
+            <div className="flex-1 flex overflow-hidden" style={{ background: '#111' }}>
+                <div className="flex-1 overflow-hidden join-animate">
                     <VideoGrid
                         localStream={screenSharing ? (screenStreamRef.current || localStream) : localStream}
                         remotePeers={remotePeers}
                         localUser={localUser}
-                        speakerId={null}
+                        speakerId={activeSpeaker}
+                        viewMode={viewMode}
+                        pinnedId={pinnedId}
+                        onPinChange={setPinnedId}
                     />
                 </div>
 
