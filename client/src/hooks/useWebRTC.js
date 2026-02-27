@@ -67,12 +67,29 @@ export function useWebRTC({ onRemoteStream, onRemoveStream, socketRef, roomId })
     }, [socketRef, onRemoteStream, onRemoveStream]);
 
     const handleOffer = useCallback(async ({ from, offer }) => {
-        const pc = createPeer(from, false);
-        await pc.setRemoteDescription(new RTCSessionDescription(offer));
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        if (socketRef.current) {
-            socketRef.current.emit('answer', { to: from, answer: pc.localDescription });
+        const existingPc = peersRef.current[from];
+
+        if (existingPc && existingPc.connectionState !== 'closed') {
+            // ── Renegotiation offer (e.g. screen share track added) ──
+            try {
+                await existingPc.setRemoteDescription(new RTCSessionDescription(offer));
+                const answer = await existingPc.createAnswer();
+                await existingPc.setLocalDescription(answer);
+                if (socketRef.current) {
+                    socketRef.current.emit('answer', { to: from, answer: existingPc.localDescription });
+                }
+            } catch (err) {
+                console.warn('[handleOffer] renegotiation failed:', err);
+            }
+        } else {
+            // ── New peer connection ──
+            const pc = createPeer(from, false);
+            await pc.setRemoteDescription(new RTCSessionDescription(offer));
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            if (socketRef.current) {
+                socketRef.current.emit('answer', { to: from, answer: pc.localDescription });
+            }
         }
     }, [createPeer, socketRef]);
 
@@ -90,11 +107,38 @@ export function useWebRTC({ onRemoteStream, onRemoveStream, socketRef, roomId })
     }, []);
 
     const replaceTrack = useCallback((newTrack, kind) => {
-        Object.values(peersRef.current).forEach(pc => {
+        Object.entries(peersRef.current).forEach(([peerId, pc]) => {
             const sender = pc.getSenders().find(s => s.track?.kind === kind);
-            if (sender && newTrack) sender.replaceTrack(newTrack);
+
+            const renegotiate = () => {
+                // Trigger a new offer so the remote peer updates its receiver
+                pc.createOffer()
+                    .then(offer => pc.setLocalDescription(offer))
+                    .then(() => {
+                        if (socketRef.current) {
+                            socketRef.current.emit('offer', { to: peerId, offer: pc.localDescription });
+                        }
+                    })
+                    .catch(err => console.warn('[replaceTrack] renegotiation error:', err));
+            };
+
+            if (sender && newTrack) {
+                // Swap the track on the existing sender, then renegotiate
+                sender.replaceTrack(newTrack)
+                    .then(renegotiate)
+                    .catch(err => console.warn('[replaceTrack] replaceTrack error:', err));
+            } else if (newTrack && !sender) {
+                // No sender of this kind yet — add track and renegotiate
+                try {
+                    const fakeStream = new MediaStream([newTrack]);
+                    pc.addTrack(newTrack, fakeStream);
+                    renegotiate();
+                } catch (err) {
+                    console.warn('[replaceTrack] addTrack fallback error:', err);
+                }
+            }
         });
-    }, []);
+    }, [socketRef]);
 
     const removePeer = useCallback((peerId) => {
         const pc = peersRef.current[peerId];
