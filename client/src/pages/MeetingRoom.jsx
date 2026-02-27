@@ -289,6 +289,84 @@ export default function MeetingRoom() {
         const onPasswordRequired = () => { addToast('Meeting requires a password', 'warning'); navigate(-1); };
         const onPMEntered = ({ name: pmName }) => addToast(`⭐ ${pmName} (PM Sir) has entered the meeting`, 'info', 5000);
 
+        // ── Audio/Video request handlers (student receives these) ──
+        const onRequestUnmuteAudio = ({ requestedBy }) => {
+            // Show an interactive action toast — student can accept or dismiss
+            const toastId = Date.now() + Math.random();
+            setToasts(t => [...t, {
+                id: toastId,
+                message: `${requestedBy} is asking you to unmute your microphone`,
+                type: 'request',
+                duration: 12000,
+                actions: [
+                    {
+                        label: '🎤 Unmute Now',
+                        style: 'accept',
+                        onClick: () => {
+                            // Enable local audio
+                            if (streamRef.current) {
+                                streamRef.current.getAudioTracks().forEach(t => { t.enabled = true; });
+                            }
+                            setAudioEnabled(true);
+                            socketRef.current?.emit('update-status', { roomId, muted: false, videoOff: !videoEnabled });
+                            setToasts(t => t.filter(x => x.id !== toastId));
+                            addToast('You unmuted your microphone 🎤', 'success', 2500);
+                        },
+                    },
+                    {
+                        label: 'Dismiss',
+                        style: 'dismiss',
+                        onClick: () => setToasts(t => t.filter(x => x.id !== toastId)),
+                    },
+                ],
+            }]);
+            setTimeout(() => setToasts(t => t.filter(x => x.id !== toastId)), 12500);
+        };
+
+        const onRequestVideoOn = ({ requestedBy }) => {
+            const toastId = Date.now() + Math.random();
+            setToasts(t => [...t, {
+                id: toastId,
+                message: `${requestedBy} is asking you to turn on your camera`,
+                type: 'request',
+                duration: 12000,
+                actions: [
+                    {
+                        label: '📹 Turn On Camera',
+                        style: 'accept',
+                        onClick: () => {
+                            if (streamRef.current) {
+                                streamRef.current.getVideoTracks().forEach(t => { t.enabled = true; });
+                            }
+                            setVideoEnabled(true);
+                            socketRef.current?.emit('update-status', { roomId, muted: !audioEnabled, videoOff: false });
+                            setToasts(t => t.filter(x => x.id !== toastId));
+                            addToast('Your camera is now on 📹', 'success', 2500);
+                        },
+                    },
+                    {
+                        label: 'Dismiss',
+                        style: 'dismiss',
+                        onClick: () => setToasts(t => t.filter(x => x.id !== toastId)),
+                    },
+                ],
+            }]);
+            setTimeout(() => setToasts(t => t.filter(x => x.id !== toastId)), 12500);
+        };
+
+        const onForceVideoOff = () => {
+            if (streamRef.current) {
+                streamRef.current.getVideoTracks().forEach(t => { t.enabled = false; });
+            }
+            setVideoEnabled(false);
+            socketRef.current?.emit('update-status', { roomId, muted: !audioEnabled, videoOff: true });
+            addToast('Host turned off your camera', 'warning');
+        };
+
+        const onVideoAllowed = () => {
+            addToast('🎥 Host allowed you to show your camera', 'success');
+        };
+
         socket.on('joined-room', onJoined);
         socket.on('waiting-room', onWaitingRoom);
         socket.on('admitted', onAdmitted);
@@ -315,6 +393,10 @@ export default function MeetingRoom() {
         socket.on('error', onError);
         socket.on('password-required', onPasswordRequired);
         socket.on('pm-entered', onPMEntered);
+        socket.on('request-unmute-audio', onRequestUnmuteAudio);
+        socket.on('request-video-on', onRequestVideoOn);
+        socket.on('force-video-off', onForceVideoOff);
+        socket.on('video-allowed', onVideoAllowed);
 
         return () => {
             socket.off('joined-room', onJoined);
@@ -342,6 +424,10 @@ export default function MeetingRoom() {
             socket.off('error', onError);
             socket.off('password-required', onPasswordRequired);
             socket.off('pm-entered', onPMEntered);
+            socket.off('request-unmute-audio', onRequestUnmuteAudio);
+            socket.off('request-video-on', onRequestVideoOn);
+            socket.off('force-video-off', onForceVideoOff);
+            socket.off('video-allowed', onVideoAllowed);
         };
     }, []);  // ← EMPTY DEPS: run exactly once
 
@@ -613,7 +699,7 @@ export default function MeetingRoom() {
                     <div className="w-80 flex-shrink-0 flex flex-col overflow-hidden animate-slide-in-right border-l"
                         style={{ borderColor: 'var(--border-color)' }}>
                         {chatOpen && <ChatPanel messages={messages} onSend={handleChat} onFileShare={handleFileShare} onClose={() => setChatOpen(false)} />}
-                        {participantsOpen && <ParticipantsPanel participants={participants} localId={localIdRef.current} isHost={isHost} onKick={handleKick} onMuteUser={handleMuteUser} onMuteAll={handleMuteAll} onClose={() => setParticipantsOpen(false)} socket={socketRef.current} roomId={roomId} />}
+                        {participantsOpen && <ParticipantsPanel participants={participants} localId={localIdRef.current} isHost={isHost} userRole={userRole} onKick={handleKick} onMuteUser={handleMuteUser} onMuteAll={handleMuteAll} onClose={() => setParticipantsOpen(false)} socket={socketRef.current} roomId={roomId} />}
                         {whiteboardOpen && <WhiteboardPanel socket={socketRef.current} roomId={roomId} onClose={() => setWhiteboardOpen(false)} />}
                         {notesOpen && <NotesPanel roomId={roomId} onClose={() => setNotesOpen(false)} />}
                     </div>

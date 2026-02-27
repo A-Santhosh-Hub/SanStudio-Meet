@@ -338,10 +338,51 @@ io.on('connection', (socket) => {
   socket.on('revoke-student', ({ targetId, roomId }) => {
     const room = rooms.getRoom(roomId);
     const participant = rooms.getParticipant(roomId, socket.id);
-    if (!room || (participant.role !== 'admin' && participant.role !== 'coach' && participant.isHost !== true)) return;
+    if (!room || (participant.role !== 'admin' && participant.role !== 'coach' && participant.role !== 'pm' && participant.isHost !== true)) return;
     rooms.updateParticipant(roomId, targetId, { canSpeak: false, muted: true });
     io.to(targetId).emit('speak-revoked');
     io.to(roomId).emit('participant-updated', { id: targetId, canSpeak: false, muted: true });
+  });
+
+  // ── REQUEST UNMUTE (polite ask — student decides) ──────────
+  socket.on('request-unmute-audio', ({ targetId, roomId }) => {
+    const participant = rooms.getParticipant(roomId, socket.id);
+    if (!participant || (participant.role !== 'admin' && participant.role !== 'coach' && participant.role !== 'pm' && participant.isHost !== true)) return;
+    io.to(targetId).emit('request-unmute-audio', { requestedBy: socket.data.name || 'Host' });
+  });
+
+  // ── REQUEST VIDEO ON (polite ask — student decides) ────────
+  socket.on('request-video-on', ({ targetId, roomId }) => {
+    const participant = rooms.getParticipant(roomId, socket.id);
+    if (!participant || (participant.role !== 'admin' && participant.role !== 'coach' && participant.role !== 'pm' && participant.isHost !== true)) return;
+    io.to(targetId).emit('request-video-on', { requestedBy: socket.data.name || 'Host' });
+  });
+
+  // ── FORCE VIDEO OFF ────────────────────────────────────────
+  socket.on('force-video-off', ({ targetId, roomId }) => {
+    const participant = rooms.getParticipant(roomId, socket.id);
+    if (!participant || (participant.role !== 'admin' && participant.role !== 'coach' && participant.role !== 'pm' && participant.isHost !== true)) return;
+    rooms.updateParticipant(roomId, targetId, { videoOff: true });
+    io.to(targetId).emit('force-video-off');
+    io.to(roomId).emit('participant-updated', { id: targetId, videoOff: true });
+  });
+
+  // ── ALLOW VIDEO (grant student permission to show video) ───
+  socket.on('allow-video', ({ targetId, roomId }) => {
+    const participant = rooms.getParticipant(roomId, socket.id);
+    if (!participant || (participant.role !== 'admin' && participant.role !== 'coach' && participant.role !== 'pm' && participant.isHost !== true)) return;
+    rooms.updateParticipant(roomId, targetId, { canShowVideo: true });
+    io.to(targetId).emit('video-allowed');
+    io.to(roomId).emit('participant-updated', { id: targetId, canShowVideo: true });
+  });
+
+  // ── REVOKE VIDEO ───────────────────────────────────────────
+  socket.on('revoke-video', ({ targetId, roomId }) => {
+    const participant = rooms.getParticipant(roomId, socket.id);
+    if (!participant || (participant.role !== 'admin' && participant.role !== 'coach' && participant.role !== 'pm' && participant.isHost !== true)) return;
+    rooms.updateParticipant(roomId, targetId, { canShowVideo: false, videoOff: true });
+    io.to(targetId).emit('force-video-off');
+    io.to(roomId).emit('participant-updated', { id: targetId, canShowVideo: false, videoOff: true });
   });
 
   socket.on('switch-mode', ({ roomId, mode }) => {
