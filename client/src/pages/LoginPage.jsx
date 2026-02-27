@@ -6,7 +6,7 @@ export default function LoginPage() {
     const navigate = useNavigate();
     const { login, loading, error, clearError } = useAuth();
 
-    // roleTab: 'student' | 'coach' | 'admin'
+    // roleTab: 'student' | 'coach' | 'pm' | 'admin'
     const [roleTab, setRoleTab] = useState('student');
     const [form, setForm] = useState({ username: '', password: '' });
 
@@ -21,6 +21,8 @@ export default function LoginPage() {
         if (roleTab === 'student') {
             ok = await login(form.username, form.password);
         } else if (roleTab === 'coach') {
+            ok = await login(form.username, form.password);
+        } else if (roleTab === 'pm') {
             ok = await login(form.username, form.password);
         } else if (roleTab === 'admin') {
             ok = await login(form.username, form.password);
@@ -70,7 +72,7 @@ export default function LoginPage() {
                 {/* Card */}
                 <div className="glass-card shadow-2xl overflow-hidden" style={{ background: 'rgba(15,15,30,0.8)', border: '1px solid rgba(255,255,255,0.1)' }}>
 
-                    {/* Tabs for Student and Coach (hide if Admin) */}
+                    {/* Tabs for Student, Coach, PM Sir (hide if Admin) */}
                     {roleTab !== 'admin' && (
                         <div className="flex border-b border-white/10" style={{ background: 'rgba(0,0,0,0.2)' }}>
                             <button onClick={() => switchTab('student')}
@@ -83,6 +85,19 @@ export default function LoginPage() {
                                 👨‍🏫 Coach
                                 {roleTab === 'coach' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-yellow-500" />}
                             </button>
+                            <button onClick={() => switchTab('pm')}
+                                className={`flex-1 py-4 text-sm font-semibold transition-all relative ${roleTab === 'pm' ? 'text-amber-300' : 'text-slate-400 hover:text-white'}`}>
+                                ⭐ PM Sir
+                                {roleTab === 'pm' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-amber-400" />}
+                            </button>
+                        </div>
+                    )}
+
+                    {/* PM Sir Header */}
+                    {roleTab === 'pm' && (
+                        <div className="px-6 py-4 border-b border-amber-400/20 bg-amber-500/10">
+                            <h2 className="text-amber-300 font-bold text-center">⭐ PM Sir Portal</h2>
+                            <p className="text-amber-400/70 text-xs text-center mt-0.5">Instant access to all meeting rooms</p>
                         </div>
                     )}
 
@@ -123,8 +138,9 @@ export default function LoginPage() {
                             <button type="submit" disabled={loading}
                                 className={`btn-ripple w-full mt-2 py-3 rounded-xl font-bold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed
                                 ${roleTab === 'admin' ? 'bg-gradient-to-r from-red-500 to-orange-500 hover:shadow-red-500/25' :
-                                        roleTab === 'coach' ? 'bg-gradient-to-r from-yellow-500 to-amber-600 hover:shadow-yellow-500/25' :
-                                            'bg-gradient-to-r from-indigo-500 to-purple-500 hover:shadow-indigo-500/25'} hover:shadow-lg`}>
+                                        roleTab === 'pm' ? 'bg-gradient-to-r from-amber-400 to-yellow-500 hover:shadow-amber-400/25 text-slate-900' :
+                                            roleTab === 'coach' ? 'bg-gradient-to-r from-yellow-500 to-amber-600 hover:shadow-yellow-500/25' :
+                                                'bg-gradient-to-r from-indigo-500 to-purple-500 hover:shadow-indigo-500/25'} hover:shadow-lg`}>
                                 {loading ? '⏳ Please wait...' : 'Login'}
                             </button>
                         </form>
@@ -135,7 +151,8 @@ export default function LoginPage() {
                             <div className="grid grid-cols-2 gap-2 text-xs text-slate-400">
                                 <div><span className="text-white font-mono">admin / admin123</span><br />(Admin)</div>
                                 <div><span className="text-white font-mono">coach / coach123</span><br />(Coach)</div>
-                                <div className="col-span-2"><span className="text-white font-mono">student / student123</span> (Student)</div>
+                                <div><span className="text-amber-300 font-mono">pm / pm123</span><br />(PM Sir ⭐)</div>
+                                <div><span className="text-white font-mono">student / student123</span><br />(Student)</div>
                             </div>
                         </div>
 

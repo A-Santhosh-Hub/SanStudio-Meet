@@ -93,6 +93,17 @@ app.post('/api/auth/create-student', (req, res) => {
   res.json(result);
 });
 
+// Create PM Sir account (admin only)
+app.post('/api/auth/create-pm', (req, res) => {
+  const { adminUsername, adminPassword, username, password, displayName } = req.body;
+  const adminCheck = AuthManager.login(adminUsername, adminPassword);
+  if (adminCheck.error || adminCheck.user.role !== 'admin') {
+    return res.json({ error: 'Unauthorized. Admin credentials required.' });
+  }
+  const result = AuthManager.createPM(username, password, displayName);
+  res.json(result);
+});
+
 app.post('/api/auth/update-user', (req, res) => {
   const { adminUsername, adminPassword, targetUsername, updates } = req.body;
   const adminCheck = AuthManager.login(adminUsername, adminPassword);
@@ -144,14 +155,17 @@ io.on('connection', (socket) => {
     }
     const room = rooms.getRoom(roomId);
 
-    // If room is locked
-    if (room && room.locked && !isHost) {
+    // ── PM Sir: instant access — bypass lock, waiting room, and password ──
+    const isPM = role === 'pm';
+
+    // If room is locked — only block non-PM, non-host users
+    if (room && room.locked && !isHost && !isPM) {
       socket.emit('error', { message: 'This meeting is locked.' });
       return;
     }
 
-    // Password check
-    if (room && room.passwordHash) {
+    // Password check — PM Sir skips password entirely
+    if (room && room.passwordHash && !isPM) {
       if (!password) {
         socket.emit('password-required');
         return;
@@ -168,10 +182,10 @@ io.on('connection', (socket) => {
       name,
       isHost: isHost || !room, // first joiner or declared host
       role: role || 'student',
-      muted: role === 'student', // Students start muted
-      videoOff: role === 'student', // Students start video off
+      muted: (role === 'student'),  // Students start muted
+      videoOff: (role === 'student'), // Students start video off
       handRaised: false,
-      canSpeak: false, // For interactive/lecture mode temporary approval
+      canSpeak: isPM || role === 'coach' || role === 'admin', // PM/coach/admin can always speak
     };
 
     if (!room) {
@@ -190,8 +204,8 @@ io.on('connection', (socket) => {
         waitingList: [],
         controlMode: room ? room.controlMode : 'lecture'
       });
-    } else if (room.waitingRoomEnabled && !isHost) {
-      // Add to waiting room
+    } else if (room.waitingRoomEnabled && !isHost && !isPM) {
+      // Add to waiting room — PM Sir is NEVER put in waiting room
       rooms.addToWaiting(roomId, { id: socket.id, name });
       socket.data.roomId = roomId;
       socket.data.name = name;
@@ -202,7 +216,7 @@ io.on('connection', (socket) => {
       const hostId = rooms.getHostId(roomId);
       io.to(hostId).emit('waiting-user', { id: socket.id, name });
     } else {
-      // Join directly (host rejoining or non-host with waiting room disabled)
+      // Join directly: host rejoining, waiting-room disabled, OR PM Sir
       const actuallyHost = rooms.getHostId(roomId) === socket.id || isHost;
       participant.isHost = actuallyHost;
       rooms.addParticipant(roomId, participant);
@@ -220,6 +234,11 @@ io.on('connection', (socket) => {
 
       // Notify others in room
       socket.to(roomId).emit('user-joined', participant);
+
+      // Special announcement if PM Sir enters
+      if (isPM) {
+        socket.to(roomId).emit('pm-entered', { name, id: socket.id });
+      }
     }
   });
 

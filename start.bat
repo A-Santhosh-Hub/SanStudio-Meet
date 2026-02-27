@@ -17,11 +17,11 @@ for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":5173 " ^| findstr "LISTENIN
 timeout /t 1 /nobreak >nul
 
 echo  [1/3] Starting Signaling Server on port 3001...
-start "SanStudio Meet - Server" cmd /k "cd /d d:\My_Software\ZOOM\server && node server.js"
+start "SanStudio Meet - Server" cmd /k "cd /d d:\GIT\SanStudio-Meet\server && node server.js"
 timeout /t 2 /nobreak >nul
 
 echo  [2/3] Starting React Client (HTTPS + LAN mode)...
-start "SanStudio Meet - Client" cmd /k "cd /d d:\My_Software\ZOOM\client && npm run dev"
+start "SanStudio Meet - Client" cmd /k "cd /d d:\GIT\SanStudio-Meet\client && npm run dev"
 timeout /t 5 /nobreak >nul
 
 echo.

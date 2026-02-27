@@ -64,11 +64,18 @@ export function useAuth() {
 
 // Role helpers
 export const isAdmin = (user) => user?.role === 'admin';
-export const isHost = (user) => user?.role === 'host' || user?.role === 'admin';
-export const isUser = (user) => user?.role === 'user';
+export const isCoach = (user) => user?.role === 'coach';
+export const isStudent = (user) => user?.role === 'student';
+export const isPM = (user) => user?.role === 'pm';
+export const isHost = (user) => user?.role === 'coach' || user?.role === 'admin' || user?.role === 'pm';
+export const isUser = (user) => user?.role === 'student';
 
 export const ROLE_COLORS = {
     admin: { bg: 'bg-red-500/15', text: 'text-red-400', border: 'border-red-500/20', label: 'Admin' },
+    coach: { bg: 'bg-yellow-500/15', text: 'text-yellow-400', border: 'border-yellow-500/20', label: 'Coach' },
+    student: { bg: 'bg-blue-500/15', text: 'text-blue-400', border: 'border-blue-500/20', label: 'Student' },
+    pm: { bg: 'bg-amber-500/15', text: 'text-amber-300', border: 'border-amber-400/30', label: 'PM Sir' },
+    // fallback aliases
     host: { bg: 'bg-yellow-500/15', text: 'text-yellow-400', border: 'border-yellow-500/20', label: 'Host' },
     user: { bg: 'bg-blue-500/15', text: 'text-blue-400', border: 'border-blue-500/20', label: 'User' },
 };

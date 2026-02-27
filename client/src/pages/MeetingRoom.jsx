@@ -133,7 +133,7 @@ export default function MeetingRoom() {
                 roomId,
                 name: userName,
                 password,
-                isHost: isHostParam || userRole === 'admin' || userRole === 'coach',
+                isHost: isHostParam || userRole === 'admin' || userRole === 'coach' || userRole === 'pm',
                 role: userRole,
             });
         };
@@ -257,6 +257,7 @@ export default function MeetingRoom() {
 
         const onError = ({ message }) => addToast(message, 'error', 5000);
         const onPasswordRequired = () => { addToast('Meeting requires a password', 'warning'); navigate(-1); };
+        const onPMEntered = ({ name: pmName }) => addToast(`⭐ ${pmName} (PM Sir) has entered the meeting`, 'info', 5000);
 
         socket.on('joined-room', onJoined);
         socket.on('waiting-room', onWaitingRoom);
@@ -283,6 +284,7 @@ export default function MeetingRoom() {
         socket.on('mode-changed', onModeChanged);
         socket.on('error', onError);
         socket.on('password-required', onPasswordRequired);
+        socket.on('pm-entered', onPMEntered);
 
         return () => {
             socket.off('joined-room', onJoined);
@@ -309,6 +311,7 @@ export default function MeetingRoom() {
             socket.off('mode-changed', onModeChanged);
             socket.off('error', onError);
             socket.off('password-required', onPasswordRequired);
+            socket.off('pm-entered', onPMEntered);
         };
     }, []);  // ← EMPTY DEPS: run exactly once
 

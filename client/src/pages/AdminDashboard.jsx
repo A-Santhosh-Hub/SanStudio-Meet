@@ -39,6 +39,10 @@ export default function AdminDashboard() {
     const [studentStatus, setStudentStatus] = useState({ error: '', success: '' });
     const [isCreatingStudent, setIsCreatingStudent] = useState(false);
 
+    const [pmForm, setPmForm] = useState({ username: '', password: '', displayName: '', adminUsername: '', adminPassword: '' });
+    const [pmStatus, setPmStatus] = useState({ error: '', success: '' });
+    const [isCreatingPM, setIsCreatingPM] = useState(false);
+
     const [editingUser, setEditingUser] = useState(null);
     const [editForm, setEditForm] = useState({ displayName: '', password: '', role: '', adminUsername: '', adminPassword: '' });
     const [editStatus, setEditStatus] = useState({ error: '', success: '' });
@@ -102,6 +106,30 @@ export default function AdminDashboard() {
             setStudentStatus({ error: 'Failed to create student. Server error.', success: '' });
         }
         setIsCreatingStudent(false);
+    };
+
+    const handleCreatePM = async (e) => {
+        e.preventDefault();
+        setPmStatus({ error: '', success: '' });
+        setIsCreatingPM(true);
+        try {
+            const res = await fetch('/api/auth/create-pm', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(pmForm)
+            });
+            const data = await res.json();
+            if (data.error) {
+                setPmStatus({ error: data.error, success: '' });
+            } else {
+                setPmStatus({ error: '', success: 'PM Sir account created successfully!' });
+                setPmForm({ username: '', password: '', displayName: '', adminUsername: '', adminPassword: '' });
+                fetchStats();
+            }
+        } catch (err) {
+            setPmStatus({ error: 'Failed to create PM account. Server error.', success: '' });
+        }
+        setIsCreatingPM(false);
     };
 
     const openEditModal = (u) => {
@@ -230,7 +258,7 @@ export default function AdminDashboard() {
 
     const handleLogout = () => { logout(); navigate('/login'); };
 
-    const roleColor = ROLE_COLORS[user?.role] || ROLE_COLORS.user;
+    const roleColor = ROLE_COLORS[user?.role] || ROLE_COLORS.student;
 
     return (
         <div className="min-h-screen" style={{ background: 'var(--bg-primary)' }}>
@@ -341,8 +369,54 @@ export default function AdminDashboard() {
                             </div>
                         )}
                     </div>
+
                 </div>
 
+                {/* Additional Actions Row 3 — Create PM Sir */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    {/* Create PM Sir Account */}
+                    <div className="glass-card p-6" style={{ border: '1px solid rgba(251,191,36,0.25)', background: 'rgba(251,191,36,0.03)' }}>
+                        <h2 className="font-semibold text-sm mb-1 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                            <span className="text-xl">⭐</span> Create PM Sir Account
+                        </h2>
+                        <p className="text-xs text-amber-400/70 mb-4">PM Sir bypasses all room restrictions — waiting room, lock, and password.</p>
+                        <form onSubmit={handleCreatePM} className="flex flex-col gap-3">
+                            <input type="text" placeholder="PM Sir Full Name" value={pmForm.displayName} onChange={e => setPmForm({ ...pmForm, displayName: e.target.value })} required className="meet-input bg-white/5 border-white/10 text-sm" />
+                            <input type="text" placeholder="PM ID (Username)" value={pmForm.username} onChange={e => setPmForm({ ...pmForm, username: e.target.value })} required className="meet-input bg-white/5 border-white/10 text-sm" />
+                            <input type="password" placeholder="PM Password" value={pmForm.password} onChange={e => setPmForm({ ...pmForm, password: e.target.value })} required className="meet-input bg-white/5 border-white/10 text-sm" />
+
+                            <div className="border-t border-white/10 my-1 pt-3">
+                                <p className="text-xs text-slate-400 mb-2 font-semibold">Verify Admin Credentials</p>
+                                <input type="text" placeholder="Admin Username" value={pmForm.adminUsername} onChange={e => setPmForm({ ...pmForm, adminUsername: e.target.value })} required className="meet-input bg-white/5 border-white/10 text-sm mb-3" />
+                                <input type="password" placeholder="Admin Password" value={pmForm.adminPassword} onChange={e => setPmForm({ ...pmForm, adminPassword: e.target.value })} required className="meet-input bg-white/5 border-white/10 text-sm" />
+                            </div>
+
+                            {pmStatus.error && <p className="text-xs text-red-400 mt-1">⚠️ {pmStatus.error}</p>}
+                            {pmStatus.success && <p className="text-xs text-green-400 mt-1">✅ {pmStatus.success}</p>}
+
+                            <button type="submit" disabled={isCreatingPM} className="btn-ripple bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-900 font-bold py-2.5 rounded-xl text-sm mt-1 transition-all disabled:opacity-50 hover:shadow-amber-400/25 hover:shadow-lg">
+                                {isCreatingPM ? 'Creating...' : '⭐ Create PM Sir Account'}
+                            </button>
+                        </form>
+                    </div>
+
+                    {/* Info Card */}
+                    <div className="glass-card p-6 flex flex-col justify-center" style={{ border: '1px solid rgba(251,191,36,0.15)' }}>
+                        <div className="flex flex-col items-center text-center">
+                            <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center mb-4">
+                                <span className="text-3xl">⭐</span>
+                            </div>
+                            <h2 className="font-bold text-lg mb-2 text-amber-300">PM Sir Privileges</h2>
+                            <ul className="text-sm text-slate-400 text-left space-y-2 mt-2">
+                                <li className="flex items-start gap-2"><span className="text-amber-400 mt-0.5">✓</span> Enters any meeting instantly</li>
+                                <li className="flex items-start gap-2"><span className="text-amber-400 mt-0.5">✓</span> Bypasses waiting room</li>
+                                <li className="flex items-start gap-2"><span className="text-amber-400 mt-0.5">✓</span> Bypasses locked room restriction</li>
+                                <li className="flex items-start gap-2"><span className="text-amber-400 mt-0.5">✓</span> Bypasses meeting password</li>
+                                <li className="flex items-start gap-2"><span className="text-amber-400 mt-0.5">✓</span> Can speak in all room modes</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
                 {/* Additional Actions Row 2 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                     {/* Create Student Account */}
@@ -483,6 +557,7 @@ export default function AdminDashboard() {
                                     <select value={editForm.role} onChange={e => setEditForm(f => ({ ...f, role: e.target.value }))} className="meet-input bg-[#1a1a2e] border-white/10 text-sm text-white focus:outline-none w-full px-3 py-2 rounded-xl">
                                         <option value="student">Student</option>
                                         <option value="coach">Coach</option>
+                                        <option value="pm">PM Sir ⭐</option>
                                     </select>
                                 </div>
                                 <div>

@@ -38,8 +38,9 @@ export default function HomePage() {
     const [showCreateCard, setShowCreateCard] = useState(false);
     const [particles, setParticles] = useState([]);
 
-    const roleColor = ROLE_COLORS[user?.role] || ROLE_COLORS.user;
-    const canCreate = user?.role === 'host'; // only hosts can create meetings
+    const roleColor = ROLE_COLORS[user?.role] || ROLE_COLORS.student;
+    // coaches, PM Sir, and admin can create meetings
+    const canCreate = user?.role === 'coach' || user?.role === 'pm' || user?.role === 'admin';
 
     useEffect(() => {
         // Generate floating particles

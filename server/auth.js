@@ -1,10 +1,11 @@
 // In-memory user store — Education Platform Roles
-// student | teacher | admin
+// student | coach | admin | pm
 //
 // Demo accounts:
 //   admin   / admin123   → admin
-//   teacher / teacher123 → teacher
+//   coach   / coach123   → coach
 //   student / student123 → student
+//   pm      / pm123      → pm  (PM Sir — instant room access)
 
 const users = new Map();
 
@@ -12,6 +13,7 @@ const seed = [
     { id: 'usr_admin', username: 'admin', password: 'admin123', role: 'admin', displayName: 'Administrator' },
     { id: 'usr_coach', username: 'coach', password: 'coach123', role: 'coach', displayName: 'Default Coach' },
     { id: 'usr_student', username: 'student', password: 'student123', role: 'student', displayName: 'Demo Student' },
+    { id: 'usr_pm', username: 'pm', password: 'pm123', role: 'pm', displayName: 'PM Sir' },
 ];
 seed.forEach(u => users.set(u.username, u));
 
@@ -56,6 +58,16 @@ const AuthManager = {
         return { user: sanitize(user) };
     },
 
+    // Create a new PM account (admin action)
+    createPM(username, password, displayName) {
+        if (users.has(username)) return { error: 'Username already taken' };
+        if (!username || username.length < 3) return { error: 'Username must be at least 3 characters' };
+        if (!password || password.length < 4) return { error: 'Password must be at least 4 characters' };
+        const user = { id: generateId(), username, password, role: 'pm', displayName: displayName || username };
+        users.set(username, user);
+        return { user: sanitize(user) };
+    },
+
     // Update user details (admin action)
     updateUser(username, updates) {
         const user = users.get(username);
@@ -69,7 +81,7 @@ const AuthManager = {
         return { user: sanitize(user) };
     },
 
-    // Delete user (admin action)
+    // Delete user (admin action) — cannot delete admin or the default pm seed
     deleteUser(username) {
         if (!users.has(username)) return { error: 'User not found' };
         const user = users.get(username);
