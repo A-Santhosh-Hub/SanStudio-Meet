@@ -113,7 +113,6 @@ export default function LoginPage() {
                                         className="py-3 px-4 text-sm font-medium relative transition-colors"
                                         style={{
                                             color: roleTab === t.key ? '#2D8CFF' : '#747487',
-                                            borderBottom: roleTab === t.key ? '2px solid #2D8CFF' : '2px solid transparent',
                                             marginBottom: '-1px',
                                             background: 'none',
                                             border: 'none',
